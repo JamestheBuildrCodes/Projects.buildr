@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRCraft - Advanced QR Code Generator</title>
+    <meta name="description" content="Generate custom QR codes with style, batch processing, and offline support">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --accent-primary: #f59e0b;
+            --accent-secondary: #fbbf24;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --error: #ef4444;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .background-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 50px, var(--accent-primary) 50px, var(--accent-primary) 51px),
+                repeating-linear-gradient(90deg, transparent, transparent 50px, var(--accent-primary) 50px, var(--accent-primary) 51px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-family: 'Crimson Pro', serif;
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            animation: fadeIn 1s ease-out 0.2s both;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 32px var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 48px var(--shadow);
+        }
+
+        .card h2 {
+            font-family: 'Crimson Pro', serif;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border);
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+
+        .tab {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            font-weight: 700;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .color-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .color-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        input[type="color"] {
+            width: 50px;
+            height: 40px;
+            padding: 0;
+            border: 2px solid var(--border);
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            font-family: 'DM Sans', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            margin-top: 0.5rem;
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+            box-shadow: none;
+        }
+
+        .file-upload {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload:hover {
+            border-color: var(--accent-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .file-upload.dragover {
+            border-color: var(--accent-primary);
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        #qr-preview {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        #qr-canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .download-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            background: var(--border);
+            transform: translateX(4px);
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-type {
+            font-size: 0.8rem;
+            color: var(--accent-primary);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .history-content {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .history-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-secondary);
+            color: var(--accent-primary);
+        }
+
+        .batch-result {
+            background: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .batch-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+        }
+
+        .batch-item canvas {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-primary);
+            box-shadow: 0 8px 32px var(--shadow);
+            z-index: 1000;
+            animation: slideInRight 0.3s ease;
+            max-width: 400px;
+        }
+
+        .notification.success {
+            border-left-color: var(--success);
+        }
+
+        .notification.error {
+            border-left-color: var(--error);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 3rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .download-options {
+                grid-template-columns: 1fr;
+            }
+
+            .color-inputs {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .grid-pattern {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .pattern-option {
+            aspect-ratio: 1;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-tertiary);
+        }
+
+        .pattern-option:hover {
+            border-color: var(--accent-primary);
+            transform: scale(1.05);
+        }
+
+        .pattern-option.selected {
+            border-color: var(--accent-primary);
+            background: rgba(245, 158, 11, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="background-pattern"></div>
+    
+    <div class="container">
+        <header>
+            <h1>QRCraft</h1>
+            <p class="subtitle">Advanced QR Code Generator · Offline · Privacy-First</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Left Column: Generator -->
+            <div class="card">
+                <h2>🎨 Create QR Code</h2>
+                
+                <div class="tabs">
+                    <button class="tab active" data-tab="url">URL</button>
+                    <button class="tab" data-tab="text">Text</button>
+                    <button class="tab" data-tab="wifi">WiFi</button>
+                    <button class="tab" data-tab="vcard">vCard</button>
+                    <button class="tab" data-tab="payment">Payment</button>
+                    <button class="tab" data-tab="batch">Batch</button>
+                </div>
+
+                <!-- URL Tab -->
+                <div class="tab-content active" id="url-content">
+                    <div class="form-group">
+                        <label>Website URL</label>
+                        <input type="url" id="url-input" placeholder="https://example.com">
+                    </div>
+                </div>
+
+                <!-- Text Tab -->
+                <div class="tab-content" id="text-content">
+                    <div class="form-group">
+                        <label>Text Content</label>
+                        <textarea id="text-input" placeholder="Enter any text..."></textarea>
+                    </div>
+                </div>
+
+                <!-- WiFi Tab -->
+                <div class="tab-content" id="wifi-content">
+                    <div class="form-group">
+                        <label>Network Name (SSID)</label>
+                        <input type="text" id="wifi-ssid" placeholder="MyNetwork">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="text" id="wifi-password" placeholder="password123">
+                    </div>
+                    <div class="form-group">
+                        <label>Security Type</label>
+                        <select id="wifi-encryption">
+                            <option value="WPA">WPA/WPA2</option>
+                            <option value="WEP">WEP</option>
+                            <option value="nopass">None</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- vCard Tab -->
+                <div class="tab-content" id="vcard-content">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="vcard-name" placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" id="vcard-phone" placeholder="+1234567890">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="vcard-email" placeholder="john@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Organization</label>
+                        <input type="text" id="vcard-org" placeholder="Company Inc.">
+                    </div>
+                </div>
+
+                <!-- Payment Tab -->
+                <div class="tab-content" id="payment-content">
+                    <div class="form-group">
+                        <label>Payment Type</label>
+                        <select id="payment-type">
+                            <option value="bitcoin">Bitcoin</option>
+                            <option value="ethereum">Ethereum</option>
+                            <option value="paypal">PayPal</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Address/Email</label>
+                        <input type="text" id="payment-address" placeholder="Payment address or email">
+                    </div>
+                    <div class="form-group">
+                        <label>Amount (optional)</label>
+                        <input type="text" id="payment-amount" placeholder="0.00">
+                    </div>
+                </div>
+
+                <!-- Batch Tab -->
+                <div class="tab-content" id="batch-content">
+                    <div class="form-group">
+                        <label>Upload CSV File</label>
+                        <div class="file-upload" id="csv-upload">
+                            <p>📄 Drop CSV file here or click to browse</p>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                                Format: url,name (one per line)
+                            </p>
+                            <input type="file" id="csv-file" accept=".csv" style="display: none;">
+                        </div>
+                    </div>
+                    <div id="batch-results"></div>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid var(--border); margin: 2rem 0;">
+
+                <!-- Styling Options -->
+                <h3 style="margin-bottom: 1rem; color: var(--accent-primary);">✨ Customize Style</h3>
+                
+                <div class="form-group">
+                    <label>QR Pattern Style</label>
+                    <div class="grid-pattern">
+                        <div class="pattern-option selected" data-pattern="square">
+                            <div style="width: 20px; height: 20px; background: currentColor;"></div>
+                        </div>
+                        <div class="pattern-option" data-pattern="dots">
+                            <div style="width: 20px; height: 20px; background: currentColor; border-radius: 50%;"></div>
+                        </div>
+                        <div class="pattern-option" data-pattern="rounded">
+                            <div style="width: 20px; height: 20px; background: currentColor; border-radius: 4px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="color-inputs">
+                    <div class="form-group">
+                        <label>Foreground Color</label>
+                        <div class="color-group">
+                            <input type="color" id="fg-color" value="#000000">
+                            <input type="text" id="fg-color-text" value="#000000">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Background Color</label>
+                        <div class="color-group">
+                            <input type="color" id="bg-color" value="#ffffff">
+                            <input type="text" id="bg-color-text" value="#ffffff">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Size (pixels)</label>
+                    <input type="range" id="qr-size" min="200" max="800" value="400" step="50">
+                    <span id="size-value" style="color: var(--text-secondary);">400px</span>
+                </div>
+
+                <div class="form-group">
+                    <label>Logo/Image (optional)</label>
+                    <input type="file" id="logo-upload" accept="image/*">
+                </div>
+
+                <button class="btn" id="generate-btn">Generate QR Code</button>
+            </div>
+
+            <!-- Right Column: Preview & History -->
+            <div>
+                <div class="card">
+                    <h2>👁️ Preview</h2>
+                    <div id="qr-preview">
+                        <p style="color: var(--text-muted);">Your QR code will appear here</p>
+                    </div>
+                    
+                    <div class="download-options">
+                        <button class="btn btn-secondary" id="download-png">PNG</button>
+                        <button class="btn btn-secondary" id="download-svg">SVG</button>
+                        <button class="btn btn-secondary" id="download-pdf">PDF</button>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 2rem;">
+                    <h2>📚 History</h2>
+                    <button class="btn btn-secondary" id="clear-history" style="margin-bottom: 1rem;">Clear All</button>
+                    <div class="history-list" id="history-list">
+                        <p style="color: var(--text-muted); text-align: center;">No history yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <script src="app.js"></script>
+</body>
+</html>
